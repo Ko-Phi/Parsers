@@ -5,8 +5,10 @@ import Data.List
 data Expression
   = Identifier String
   | Application Expression Expression
-  | Lambda Expression Expression -- Where first expression is an identifier
+  | Lambda Identifier Expression -- Where first expression is an identifier
   deriving (Eq)
+
+type Identifier = Expression
 
 instance Show Expression where
   show (Identifier s) = s
@@ -93,10 +95,6 @@ application = do
   xs <- sepBy forceWs notApplication
   return $ foldl Application e xs
 
-unwrapId :: Expression -> String
-unwrapId (Identifier i) = i
-unwrapId _ = error "Must be an identifier"
-
 lambda :: Parser Expression
 lambda = do
   (char '\\' <|> char 'λ') >> ws
@@ -111,21 +109,68 @@ notApplication = lambda <|> grouping <|> identifier
 expression :: Parser Expression
 expression = application <|> notApplication
 
-replace :: String -> Expression -> Expression -> Expression
-replace s e1 e2@(Identifier i) =
-  if s == i
+replaceIn :: Identifier -> Expression -> Expression -> Expression
+replaceIn i e1 e2@(Identifier _) =
+  if i == e2
     then e1
     else e2
 -- May duplicate indentifiers
-replace s e1 (Application e2 e3) =
-  Application (replace s e1 e2) (replace s e1 e3)
-replace s e1 (Lambda i1 e2) = Lambda i1 (replace s e1 e2)
+replaceIn i e1 (Application e2 e3) =
+  Application (replaceIn i e1 e2) (replaceIn i e1 e3)
+replaceIn i e1 (Lambda i1 e2) = Lambda i1 (replaceIn i e1 e2)
 
 reduce :: Expression -> Expression
-reduce (Application (Lambda (Identifier i) e1) e2) = replace i e2 e1
+reduce (Application (Lambda i e1) e2) = replaceIn i e2 (reduce e1)
+reduce (Application e1 e2) = Application (reduce e1) (reduce e2)
 reduce x = x
 
 apply e1 e2 = reduce (Application e1 e2)
 
-applyM :: Expression -> [String] -> Expression
-applyM e = foldl apply e . map Identifier
+applyIds :: Expression -> [String] -> Expression
+applyIds e = foldl apply e . map Identifier
+
+idiot = Lambda (Identifier "x") (Identifier "x")
+
+kestral = Lambda (Identifier "x") (Lambda (Identifier "y") (Identifier "x"))
+
+mockingbird =
+  Lambda (Identifier "x") (Application (Identifier "x") (Identifier "x"))
+
+bluebird =
+  Lambda
+    (Identifier "f")
+    (Lambda
+       (Identifier "g")
+       (Lambda
+          (Identifier "x")
+          (Application
+             (Identifier "f")
+             (Application (Identifier "g") (Identifier "x")))))
+
+starling =
+  Lambda
+    (Identifier "x")
+    (Lambda
+       (Identifier "y")
+       (Lambda
+          (Identifier "z")
+          (Application
+             (Identifier "x")
+             (Application
+                (Identifier "z")
+                (Application (Identifier "y") (Identifier "z"))))))
+
+yCombinator =
+  Lambda
+    (Identifier "f")
+    (Application
+       (Lambda
+          (Identifier "x")
+          (Application
+             (Identifier "f")
+             (Application (Identifier "x") (Identifier "x"))))
+       (Lambda
+          (Identifier "x")
+          (Application
+             (Identifier "f")
+             (Application (Identifier "x") (Identifier "x")))))

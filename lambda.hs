@@ -47,38 +47,6 @@ instance Alternative Parser where
   empty = Parser $ const Nothing
   p1 <|> p2 = Parser $ \s -> runParser p1 s <|> runParser p2 s
 
-natP :: Parser Int
-natP = read <$> some (charIf isDigit)
-
-intP :: Parser Int
-intP = (negate <$> (char '-' *> intP)) <|> natP
-
-floatP :: Parser Float
-floatP =
-  (\x _ y -> read (show x ++ "." ++ show y)) <$> intP <*> char '.' <*> natP
-
-floatP' :: Parser Float
-floatP' = do
-  x <- intP
-  char '.'
-  y <- natP
-  return . read $ (show x ++ "." ++ show y)
-
-parseIdentifier :: Parser String
-parseIdentifier = do
-  s <- notNull $ spanP (not . isSpace)
-  ws
-  if isDigit . head $ s
-    then empty
-    else return s
-
-parseAssignment :: Parser String
-parseAssignment = do
-  name <- parseIdentifier
-  ws *> char '=' *> ws
-  constant <- intP
-  return (name ++ " = " ++ show constant)
-
 char :: Char -> Parser Char
 char c =
   Parser $ \s -> do

@@ -1,62 +1,80 @@
 -- Functional parsing library from chapter 13 of Programming in Haskell,
 -- Graham Hutton, Cambridge University Press, 2016.
-
-module Parsing (module Parsing, module Control.Applicative) where
+module Parsing
+  ( module Parsing
+  , module Control.Applicative
+  ) where
 
 import Control.Applicative
 import Data.Char
 
 -- Basic definitions
+newtype Parser a =
+  P (String -> [(a, String)])
 
-newtype Parser a = P (String -> [(a,String)])
-
-parse :: Parser a -> String -> [(a,String)]
+parse :: Parser a -> String -> [(a, String)]
 parse (P p) inp = p inp
 
 item :: Parser Char
-item = P (\inp -> case inp of
-                     []     -> []
-                     (x:xs) -> [(x,xs)])
+item =
+  P (\inp ->
+       case inp of
+         [] -> []
+         (x:xs) -> [(x, xs)])
 
 -- Sequencing parsers
-
-instance Functor Parser where
+instance Functor Parser
    -- fmap :: (a -> b) -> Parser a -> Parser b
-   fmap g p = P (\inp -> case parse p inp of
-                            []        -> []
-                            [(v,out)] -> [(g v, out)])
+                                               where
+  fmap g p =
+    P
+      (\inp ->
+         case parse p inp of
+           [] -> []
+           [(v, out)] -> [(g v, out)])
 
-instance Applicative Parser where
+instance Applicative Parser
    -- pure :: a -> Parser a
-   pure v = P (\inp -> [(v,inp)])
-
+                            where
+  pure v = P (\inp -> [(v, inp)])
    -- <*> :: Parser (a -> b) -> Parser a -> Parser b
-   pg <*> px = P (\inp -> case parse pg inp of
-                             []        -> []
-                             [(g,out)] -> parse (fmap g px) out)
+  pg <*> px =
+    P
+      (\inp ->
+         case parse pg inp of
+           [] -> []
+           [(g, out)] -> parse (fmap g px) out)
 
-instance Monad Parser where
+instance Monad Parser
    -- (>>=) :: Parser a -> (a -> Parser b) -> Parser b
-   p >>= f = P (\inp -> case parse p inp of
-                           []        -> []
-                           [(v,out)] -> parse (f v) out)
+                                                       where
+  p >>= f =
+    P
+      (\inp ->
+         case parse p inp of
+           [] -> []
+           [(v, out)] -> parse (f v) out)
 
 -- Making choices
-
-instance Alternative Parser where
+instance Alternative Parser
    -- empty :: Parser a
-   empty = P (\inp -> [])
-
+                        where
+  empty = P (\inp -> [])
    -- (<|>) :: Parser a -> Parser a -> Parser a
-   p <|> q = P (\inp -> case parse p inp of
-                           []        -> parse q inp
-                           [(v,out)] -> [(v,out)])
+  p <|> q =
+    P
+      (\inp ->
+         case parse p inp of
+           [] -> parse q inp
+           [(v, out)] -> [(v, out)])
 
 -- Derived primitives
-
 sat :: (Char -> Bool) -> Parser Char
-sat p = do x <- item
-           if p x then return x else empty
+sat p = do
+  x <- item
+  if p x
+    then return x
+    else empty
 
 digit :: Parser Char
 digit = sat isDigit
@@ -77,37 +95,42 @@ char :: Char -> Parser Char
 char x = sat (== x)
 
 string :: String -> Parser String
-string []     = return []
-string (x:xs) = do char x
-                   string xs
-                   return (x:xs)
+string [] = return []
+string (x:xs) = do
+  char x
+  string xs
+  return (x : xs)
 
 ident :: Parser String
-ident = do x  <- lower
-           xs <- many alphanum
-           return (x:xs)
+ident = do
+  x <- lower
+  xs <- many alphanum
+  return (x : xs)
 
 nat :: Parser Int
-nat = do xs <- some digit
-         return (read xs)
+nat = do
+  xs <- some digit
+  return (read xs)
 
 int :: Parser Int
-int = do char '-'
-         n <- nat
-         return (-n)
-       <|> nat
+int = do
+  char '-'
+  n <- nat
+  return (-n)
+  <|> nat
 
 -- Handling spacing
-
 space :: Parser ()
-space = do many (sat isSpace)
-           return ()
+space = do
+  many (sat isSpace)
+  return ()
 
 token :: Parser a -> Parser a
-token p = do space
-             v <- p
-             space
-             return v
+token p = do
+  space
+  v <- p
+  space
+  return v
 
 identifier :: Parser String
 identifier = token ident

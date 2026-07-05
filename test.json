@@ -1,0 +1,16 @@
+{
+  "stringExample": "Hello, world!",
+  "escapedString": "\"\\\"Hello\"\\\"",
+  "numberInteger": 42,
+  "numberFloat": 3.14159,
+  "numberNegative": -17,
+  "booleanTrue": true,
+  "booleanFalse": false,
+  "nullExample": null,
+  "objectExample": {
+    "nestedKey": "nestedValue",
+    "nestedNumber": 7
+  },
+  "arrayExample": [1, "two", false, null, { "five": 5 }],
+  "nill": {}
+}

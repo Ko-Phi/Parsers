@@ -1,6 +1,9 @@
+module Lambda where
+
 import Control.Applicative
 import Data.Char
 import Data.List
+import Data.Parser
 
 data Expression
   = Identifier String
@@ -18,50 +21,6 @@ instance Show Expression where
   show (Application e1 e2) = show e1 ++ " (" ++ show e2 ++ ")"
   show (Lambda s e) = "λ" ++ show s ++ "." ++ show e
 
-newtype Parser a = Parser
-  { runParser :: String -> Maybe (String, a)
-  }
-
-instance Functor Parser where
-  fmap f p =
-    Parser $ \s -> do
-      (s', x) <- runParser p s
-      return (s', f x)
-
-instance Applicative Parser where
-  pure x = Parser $ \s -> return (s, x)
-  pf <*> ps =
-    Parser $ \s -> do
-      (s', f) <- runParser pf s
-      runParser (f <$> ps) s'
-
-instance Monad Parser where
-  p >>= f =
-    Parser $ \s -> do
-      (s', x) <- runParser p s
-      runParser (f x) s'
-
-instance MonadFail Parser where
-  fail _ = empty
-
-instance Alternative Parser where
-  empty = Parser $ const Nothing
-  p1 <|> p2 = Parser $ \s -> runParser p1 s <|> runParser p2 s
-
-char :: Char -> Parser Char
-char c = charIf (== c)
-
-charIf :: (Char -> Bool) -> Parser Char
-charIf p =
-  Parser $ \s -> do
-    (c, cs) <- uncons s
-    if p c
-      then return (cs, c)
-      else Nothing
-
-string :: String -> Parser String
-string = traverse char
-
 notNull :: Parser [a] -> Parser [a]
 notNull p =
   Parser $ \s -> do
@@ -70,14 +29,8 @@ notNull p =
       then Nothing
       else return (s', xs)
 
-ws :: Parser String
-ws = many $ charIf isSpace
-
 forceWs :: Parser String
 forceWs = some $ charIf isSpace
-
-sepBy :: Parser a -> Parser b -> Parser [b]
-sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
 
 identifier :: Parser Expression
 identifier = do

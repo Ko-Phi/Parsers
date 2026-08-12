@@ -33,6 +33,9 @@ instance Alternative Parser where
   empty = Parser $ const Nothing
   (Parser p1) <|> (Parser p2) = Parser $ \s -> p1 s <|> p2 s
 
+-- No proper error handling
+-- runParser acts as an unwrapper, shortens some expressions that would otherwise require patternmatching (Parser p) or return (rs, x) 
+--
 char :: Char -> Parser Char
 char c = charIf (== c)
 
@@ -52,6 +55,3 @@ ws = many $ charIf isSpace
 
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
-
-something :: a
-something = undefined

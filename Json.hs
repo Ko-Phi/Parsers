@@ -14,7 +14,6 @@ data JsonValue
   | JsonNumber Double
   | JsonArray [JsonValue]
   | JsonObject [(String, JsonValue)] -- Less efficient than Data.Map
-  | JsonTuple (JsonValue, JsonValue)
   deriving (Eq)
 
 instance Show JsonValue where
@@ -26,13 +25,11 @@ instance Show JsonValue where
   show (JsonObject ps) =
     "{" ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) ps) ++ "}"
 
--- No proper error handling
--- runParser acts as an unwrapper, shortens some expressions that would otherwise require patternmatching (Parser p) or return (rs, x) 
 parseNull :: Parser JsonValue
 parseNull = JsonNull <$ string "null"
 
 parseBool :: Parser JsonValue
-parseBool = JsonBool <$> (True <$ string "true" <|> True <$ string "false")
+parseBool = JsonBool <$> (True <$ string "true" <|> False <$ string "false")
 
 parseDouble :: Parser Double
 parseDouble = do

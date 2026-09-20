@@ -1,6 +1,7 @@
 module Data.Parser where
 
 import Control.Applicative
+import Data.Bifunctor
 import Data.Char (isSpace)
 import Data.List (uncons)
 
@@ -15,10 +16,7 @@ newtype Parser a = Parser
   }
 
 instance Functor Parser where
-  fmap f p =
-    Parser $ \s -> do
-      (s', x) <- runParser p s
-      pure (s', f x)
+  fmap f p = Parser $ \s -> second (second f) $ runParser p s
 
 -- More compact (horizontally) but harder to read and store values
 instance Applicative Parser where
@@ -44,13 +42,9 @@ instance Alternative Parser where
         (Left _, Right x) -> Right x
         (Left x, _) -> Left x
 
--- Shoddy Bifunctor
-mapLeft :: (Desc -> Desc) -> Parser a -> Parser a
-mapLeft f p =
-  Parser $ \s ->
-    case runParser p s of
-      Left x -> Left $ f x
-      Right x -> Right x
+-- Shoddy Bifunctor implentation
+mapDesc :: (Desc -> Desc) -> Parser a -> Parser a
+mapDesc f p = Parser $ \s -> first f (runParser p s)
 
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c
@@ -65,7 +59,7 @@ charIf p desc =
       else Left $ desc' ++ ", got " ++ show c
 
 string :: String -> Parser String
-string s = mapLeft (++ " in string " ++ show s) (traverse char s)
+string s = mapDesc (++ " in string " ++ show s) (traverse char s)
 
 ws :: Parser String
 ws = many . charIf isSpace $ "whitespace"

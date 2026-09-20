@@ -35,6 +35,6 @@ executable Parsers
     import:           warnings
     main-is:          Json.hs
     other-modules:    Data.Parser, Example, Lambda
-    build-depends:    base ^>=4.18.3.0, containers, extra
+    build-depends:    base ^>=4.18.3.0, containers
     hs-source-dirs:   app
     default-language: Haskell2010

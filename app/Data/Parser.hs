@@ -4,7 +4,11 @@ import Control.Applicative
 import Data.Char (isSpace)
 import Data.List (uncons)
 
-type Input = (Int, String)
+type Loc = Int
+
+type Desc = String
+
+type Input = (Loc, String)
 
 -- runParser acts as an unwrapper, shortens some expressions that would otherwise require patternmatching (Parser p) or return (rs, x) 
 newtype Parser a = Parser
@@ -33,7 +37,7 @@ instance Monad Parser where
       runParser (f x) s'
 
 instance Alternative Parser where
-  empty = Parser $ const Nothing
+  empty = Parser . const $ Nothing
   (Parser p1) <|> (Parser p2) = Parser $ \s -> p1 s <|> p2 s
 
 -- No proper error handling

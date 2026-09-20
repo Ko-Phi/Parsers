@@ -1,4 +1,4 @@
-module Json where
+module Main where
 
 import Control.Applicative
 import Control.Monad (replicateM)

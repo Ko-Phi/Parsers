@@ -1,10 +1,7 @@
+module Example where
+
 -- Functional parsing library from chapter 13 of Programming in Haskell,
 -- Graham Hutton, Cambridge University Press, 2016.
-module Parsing
-  ( module Parsing
-  , module Control.Applicative
-  ) where
-
 import Control.Applicative
 import Data.Char
 

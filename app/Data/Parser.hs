@@ -2,7 +2,6 @@ module Data.Parser where
 
 import Control.Applicative
 import Data.Char (isSpace)
-import Data.Either.Extra
 import Data.List (uncons)
 
 type Loc = Int
@@ -54,7 +53,7 @@ charIf :: (Char -> Bool) -> Desc -> Parser Char
 charIf p desc =
   Parser $ \(loc, s) -> do
     let desc' = "Expected " ++ desc ++ " at " ++ show loc
-    (c, cs) <- maybeToEither (desc' ++ ", reached end of input") (uncons s)
+    (c, cs) <- maybe (Left $ desc' ++ ", reached end of input") Right (uncons s)
     if p c
       then return ((loc + 1, cs), c)
       else Left $ desc' ++ ", got " ++ show c

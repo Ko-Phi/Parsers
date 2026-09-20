@@ -36,8 +36,8 @@ parseBool = JsonBool <$> (True <$ string "true" <|> False <$ string "false")
 
 parseDouble :: Parser Double
 parseDouble = do
-  sign <- minus <|> pure 1
-  int <- read <$> digits
+  sign <- minus <|> pure 1 :: Parser Integer
+  int <- read <$> digits :: Parser Integer
   dec <- read . ('0' :) <$> liftA2 (:) (char '.') digits <|> pure 0
   expo <-
     e *> liftA2 (*) (plus <|> minus <|> pure 1) (read <$> digits) <|> pure 0

@@ -1,3 +1,6 @@
+{- HLINT ignore "Use lambda-case" -}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+
 module Example where
 
 -- Functional parsing library from chapter 13 of Programming in Haskell,
@@ -10,7 +13,7 @@ newtype Parser a =
   P (String -> [(a, String)])
 
 parse :: Parser a -> String -> [(a, String)]
-parse (P p) inp = p inp
+parse (P p) = p
 
 item :: Parser Char
 item =
@@ -56,7 +59,7 @@ instance Monad Parser
 instance Alternative Parser
    -- empty :: Parser a
                         where
-  empty = P (\inp -> [])
+  empty = P (const [])
    -- (<|>) :: Parser a -> Parser a -> Parser a
   p <|> q =
     P
@@ -94,8 +97,8 @@ char x = sat (== x)
 string :: String -> Parser String
 string [] = return []
 string (x:xs) = do
-  char x
-  string xs
+  _ <- char x
+  _ <- string xs
   return (x : xs)
 
 ident :: Parser String
@@ -111,7 +114,7 @@ nat = do
 
 int :: Parser Int
 int = do
-  char '-'
+  _ <- char '-'
   n <- nat
   return (-n)
   <|> nat
@@ -119,7 +122,7 @@ int = do
 -- Handling spacing
 space :: Parser ()
 space = do
-  many (sat isSpace)
+  _ <- many (sat isSpace)
   return ()
 
 token :: Parser a -> Parser a

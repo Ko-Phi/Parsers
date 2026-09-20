@@ -4,6 +4,7 @@ import Control.Applicative
 import Control.Monad (replicateM)
 import Data.Char
 import Data.List (intercalate)
+import qualified Data.Map as Map
 import Data.Parser
 import Numeric (readHex)
 
@@ -13,7 +14,7 @@ data JsonValue
   | JsonString String
   | JsonNumber Double
   | JsonArray [JsonValue]
-  | JsonObject [(String, JsonValue)] -- Less efficient than Data.Map
+  | JsonObject (Map.Map String JsonValue) -- Less efficient than Data.Map
   deriving (Eq)
 
 instance Show JsonValue where
@@ -25,7 +26,7 @@ instance Show JsonValue where
   show (JsonObject ps) =
     'J'
       : "{"
-      ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) ps)
+      ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) (Map.toList ps))
       ++ "}"
 
 parseNull :: Parser JsonValue
@@ -85,7 +86,7 @@ parseObject = do
   _ <- char '{' *> ws
   dict <- sepBy (ws *> char ',' <* ws) parsePair
   _ <- ws <* char '}'
-  pure $ JsonObject dict
+  pure . JsonObject . Map.fromList $ dict
   where
     parsePair = do
       key <- stringLiteral
@@ -108,12 +109,12 @@ parseFile fileName parser = do
   pure $ snd <$> runParser parser (0, input)
 
 getValue :: JsonValue -> [String] -> Maybe JsonValue
-getValue (JsonObject []) _ = Nothing
-getValue (JsonObject (x:xs)) keys@(k:ks) =
-  if fst x == k
-    then getValue (snd x) ks
-    else getValue (JsonObject xs) keys
 getValue x [] = Just x
+getValue (JsonObject ps) (k:ks)
+  | Map.null ps = Nothing
+  | otherwise = do
+    val <- Map.lookup k ps
+    getValue val ks
 getValue _ _ = Nothing
 
 main :: IO ()

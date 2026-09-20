@@ -18,14 +18,13 @@ data JsonValue
   deriving (Eq)
 
 instance Show JsonValue where
-  show JsonNull = 'J' : "null"
-  show (JsonBool b) = 'J' : show b
-  show (JsonString s) = 'J' : show s
-  show (JsonNumber n) = 'J' : show n
-  show (JsonArray xs) = 'J' : "[" ++ intercalate ", " (map show xs) ++ "]"
+  show JsonNull = "null"
+  show (JsonBool b) = show b
+  show (JsonString s) = show s
+  show (JsonNumber n) = show n
+  show (JsonArray xs) = "[" ++ intercalate ", " (map show xs) ++ "]"
   show (JsonObject ps) =
-    'J'
-      : "{"
+    "{"
       ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) (Map.toList ps))
       ++ "}"
 

@@ -7,12 +7,12 @@ import Data.List (uncons)
 
 type Loc = Int
 
-type Desc = String
+type Error = String
 
 type Input = (Loc, String)
 
 newtype Parser a = Parser
-  { runParser :: Input -> Either Desc (Input, a)
+  { runParser :: Input -> Either Error (Input, a)
   }
 
 instance Functor Parser where
@@ -43,23 +43,23 @@ instance Alternative Parser where
         (Left x, _) -> Left x
 
 -- Shoddy Bifunctor implentation
-mapDesc :: (Desc -> Desc) -> Parser a -> Parser a
-mapDesc f p = Parser $ \s -> first f (runParser p s)
+mapErr :: (Error -> Error) -> Parser a -> Parser a
+mapErr f p = Parser $ \s -> first f (runParser p s)
 
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c
 
-charIf :: (Char -> Bool) -> Desc -> Parser Char
-charIf p desc =
+charIf :: (Char -> Bool) -> String -> Parser Char
+charIf p pattern =
   Parser $ \(loc, s) -> do
-    let desc' = "Expected " ++ desc ++ " at " ++ show loc
-    (c, cs) <- maybe (Left $ desc' ++ ", reached end of input") Right (uncons s)
+    let err = "Expected " ++ pattern ++ " at " ++ show loc
+    (c, s') <- maybe (Left $ err ++ ", reached end of input") Right (uncons s)
     if p c
-      then pure ((loc + 1, cs), c)
-      else Left $ desc' ++ ", got " ++ show c
+      then pure ((loc + 1, s'), c)
+      else Left $ err ++ ", got " ++ show c
 
 string :: String -> Parser String
-string s = mapDesc (++ " in string " ++ show s) (traverse char s)
+string s = mapErr (++ " in string " ++ show s) (traverse char s)
 
 ws :: Parser String
 ws = many . charIf isSpace $ "whitespace"

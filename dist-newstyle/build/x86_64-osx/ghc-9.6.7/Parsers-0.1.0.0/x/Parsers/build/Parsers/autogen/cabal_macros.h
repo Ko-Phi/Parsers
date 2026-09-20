@@ -20,6 +20,16 @@
   (major1) == 4 && (major2) <  18 || \
   (major1) == 4 && (major2) == 18 && (minor) <= 3)
 #endif /* MIN_VERSION_base */
+/* package extra-1.8.1 */
+#ifndef VERSION_extra
+#define VERSION_extra "1.8.1"
+#endif /* VERSION_extra */
+#ifndef MIN_VERSION_extra
+#define MIN_VERSION_extra(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  8 || \
+  (major1) == 1 && (major2) == 8 && (minor) <= 1)
+#endif /* MIN_VERSION_extra */
 
 /* tool gcc-15.0.0 */
 #ifndef TOOL_VERSION_gcc

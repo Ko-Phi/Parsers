@@ -73,7 +73,7 @@ sat :: (Char -> Bool) -> Parser Char
 sat p = do
   x <- item
   if p x
-    then return x
+    then pure x
     else empty
 
 digit :: Parser Char
@@ -95,42 +95,42 @@ char :: Char -> Parser Char
 char x = sat (== x)
 
 string :: String -> Parser String
-string [] = return []
+string [] = pure []
 string (x:xs) = do
   _ <- char x
   _ <- string xs
-  return (x : xs)
+  pure (x : xs)
 
 ident :: Parser String
 ident = do
   x <- lower
   xs <- many alphanum
-  return (x : xs)
+  pure (x : xs)
 
 nat :: Parser Int
 nat = do
   xs <- some digit
-  return (read xs)
+  pure (read xs)
 
 int :: Parser Int
 int = do
   _ <- char '-'
   n <- nat
-  return (-n)
+  pure (-n)
   <|> nat
 
 -- Handling spacing
 space :: Parser ()
 space = do
   _ <- many (sat isSpace)
-  return ()
+  pure ()
 
 token :: Parser a -> Parser a
 token p = do
   space
   v <- p
   space
-  return v
+  pure v
 
 identifier :: Parser String
 identifier = token ident

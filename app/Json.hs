@@ -41,7 +41,7 @@ parseDouble = do
   dec <- read . ('0' :) <$> liftA2 (:) (char '.') digits <|> pure 0
   expo <-
     e *> liftA2 (*) (plus <|> minus <|> pure 1) (read <$> digits) <|> pure 0
-  return $ fromIntegral sign * (fromIntegral int + dec) * (10 ^^ expo)
+  pure $ fromIntegral sign * (fromIntegral int + dec) * (10 ^^ expo)
   where
     digits = some (charIf isDigit "Expected digit")
     e = char 'e' <|> char 'E'
@@ -85,13 +85,13 @@ parseObject = do
   _ <- char '{' *> ws
   dict <- sepBy (ws *> char ',' <* ws) parsePair
   _ <- ws <* char '}'
-  return $ JsonObject dict
+  pure $ JsonObject dict
   where
     parsePair = do
       key <- stringLiteral
       _ <- ws *> char ':' <* ws
       value <- parseJson
-      return (key, value)
+      pure (key, value)
 
 parseJson :: Parser JsonValue
 parseJson =
@@ -105,7 +105,7 @@ parseJson =
 parseFile :: FilePath -> Parser a -> IO (Either String a)
 parseFile fileName parser = do
   input <- readFile fileName
-  return $ snd <$> runParser parser (0, input)
+  pure $ snd <$> runParser parser (0, input)
 
 getValue :: JsonValue -> [String] -> Maybe JsonValue
 getValue (JsonObject []) _ = Nothing

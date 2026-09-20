@@ -10,7 +10,6 @@ type Desc = String
 
 type Input = (Loc, String)
 
--- runParser acts as an unwrapper, shortens some expressions that would otherwise require patternmatching (Parser p) or return (rs, x) 
 newtype Parser a = Parser
   { runParser :: Input -> Either Desc (Input, a)
   }
@@ -19,7 +18,7 @@ instance Functor Parser where
   fmap f p =
     Parser $ \s -> do
       (s', x) <- runParser p s
-      return (s', f x)
+      pure (s', f x)
 
 -- More compact (horizontally) but harder to read and store values
 instance Applicative Parser where
@@ -45,6 +44,13 @@ instance Alternative Parser where
         (Left _, Right x) -> Right x
         (Left x, _) -> Left x
 
+mapLeft :: (Desc -> Desc) -> Parser a -> Parser a
+mapLeft f p =
+  Parser $ \s ->
+    case runParser p s of
+      Left x -> Left $ f x
+      Right x -> Right x
+
 -- No proper error handling
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c
@@ -55,15 +61,11 @@ charIf p desc =
     let desc' = "Expected " ++ desc ++ " at " ++ show loc
     (c, cs) <- maybe (Left $ desc' ++ ", reached end of input") Right (uncons s)
     if p c
-      then return ((loc + 1, cs), c)
+      then pure ((loc + 1, cs), c)
       else Left $ desc' ++ ", got " ++ show c
 
 string :: String -> Parser String
-string s =
-  Parser $ \input ->
-    case runParser (traverse char s) input of
-      Left desc -> Left $ desc ++ " in string " ++ show s
-      Right x -> Right x
+string s = mapLeft (++ " in string " ++ show s) (traverse char s)
 
 ws :: Parser String
 ws = many . charIf isSpace $ "whitespace"

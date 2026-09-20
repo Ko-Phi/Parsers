@@ -26,7 +26,7 @@ notNull p =
     (s', xs) <- runParser p s
     if null xs
       then Left "Empty list"
-      else return (s', xs)
+      else pure (s', xs)
 
 forceWs :: Parser String
 forceWs = some $ charIf isSpace "whitespace"
@@ -35,7 +35,7 @@ identifier :: Parser Expression
 identifier = do
   c <- charIf isAlpha "alphabetical"
   cs <- many $ charIf isAlphaNum "alpnumeric"
-  return $ Identifier (c : cs)
+  pure $ Identifier (c : cs)
 
 grouping :: Parser Expression
 grouping = char '(' *> expression <* char ')'
@@ -45,7 +45,7 @@ application = do
   e <- notApplication
   _ <- forceWs
   xs <- sepBy forceWs notApplication
-  return $ foldl Application e xs
+  pure $ foldl Application e xs
 
 lambda :: Parser Expression
 lambda = do
@@ -53,7 +53,7 @@ lambda = do
   is <- notNull $ sepBy forceWs identifier
   _ <- ws >> (string "->" <|> pure <$> char '.') >> ws
   e <- expression
-  return $ foldr Lambda (Lambda (last is) e) (init is)
+  pure $ foldr Lambda (Lambda (last is) e) (init is)
 
 notApplication :: Parser Expression
 notApplication = lambda <|> grouping <|> identifier

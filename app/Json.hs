@@ -36,12 +36,12 @@ parseBool = JsonBool <$> (True <$ string "true" <|> False <$ string "false")
 
 parseDouble :: Parser Double
 parseDouble = do
-  sign <- minus <|> pure 1 :: Parser Integer
-  int <- read <$> digits :: Parser Integer
-  dec <- read . ('0' :) <$> liftA2 (:) (char '.') digits <|> pure 0
+  sign <- minus <|> pure 1
+  nat <- read <$> digits
+  mantissa <- read . ('0' :) <$> liftA2 (:) (char '.') digits <|> pure 0
   expo <-
     e *> liftA2 (*) (plus <|> minus <|> pure 1) (read <$> digits) <|> pure 0
-  pure $ fromIntegral sign * (fromIntegral int + dec) * (10 ^^ expo)
+  pure $ sign * (nat + mantissa) * (10 ** expo)
   where
     digits = some (charIf isDigit "Expected digit")
     e = char 'e' <|> char 'E'

@@ -17,13 +17,16 @@ data JsonValue
   deriving (Eq)
 
 instance Show JsonValue where
-  show JsonNull = "null"
-  show (JsonBool b) = show b
-  show (JsonString s) = show s
-  show (JsonNumber n) = show n
-  show (JsonArray xs) = "[" ++ intercalate ", " (map show xs) ++ "]"
+  show JsonNull = 'J' : "null"
+  show (JsonBool b) = 'J' : show b
+  show (JsonString s) = 'J' : show s
+  show (JsonNumber n) = 'J' : show n
+  show (JsonArray xs) = 'J' : "[" ++ intercalate ", " (map show xs) ++ "]"
   show (JsonObject ps) =
-    "{" ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) ps) ++ "}"
+    'J'
+      : "{"
+      ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) ps)
+      ++ "}"
 
 parseNull :: Parser JsonValue
 parseNull = JsonNull <$ string "null"
@@ -40,7 +43,7 @@ parseDouble = do
     e *> liftA2 (*) (plus <|> minus <|> pure 1) (read <$> digits) <|> pure 0
   return $ fromIntegral sign * (fromIntegral int + dec) * (10 ^^ expo)
   where
-    digits = some (charIf isDigit)
+    digits = some (charIf isDigit "Expected digit")
     e = char 'e' <|> char 'E'
     plus = 1 <$ char '+'
     minus = -1 <$ char '-'
@@ -61,10 +64,10 @@ escapeChar =
     <|> (string "\\u" *> escapeUnicode)
   where
     escapeUnicode =
-      chr . fst . head . readHex <$> replicateM 4 (charIf isHexDigit)
+      chr . fst . head . readHex <$> replicateM 4 (charIf isHexDigit "hexcode")
 
 normalChar :: Parser Char
-normalChar = charIf (liftA2 (&&) (/= '"') (/= '\\'))
+normalChar = charIf (liftA2 (&&) (/= '"') (/= '\\')) "non-quotation / escape"
 
 stringLiteral :: Parser String
 stringLiteral = char '"' *> many (normalChar <|> escapeChar) <* char '"'
@@ -79,14 +82,14 @@ parseArray = JsonArray <$> (char '[' *> ws *> parseElements <* ws <* char ']')
 
 parseObject :: Parser JsonValue
 parseObject = do
-  char '{' *> ws
+  _ <- char '{' *> ws
   dict <- sepBy (ws *> char ',' <* ws) parsePair
-  ws <* char '}'
+  _ <- ws <* char '}'
   return $ JsonObject dict
   where
     parsePair = do
       key <- stringLiteral
-      ws *> char ':' <* ws
+      _ <- ws *> char ':' <* ws
       value <- parseJson
       return (key, value)
 
@@ -99,7 +102,7 @@ parseJson =
     <|> parseArray
     <|> parseObject
 
-parseFile :: FilePath -> Parser a -> IO (Maybe a)
+parseFile :: FilePath -> Parser a -> IO (Either String a)
 parseFile fileName parser = do
   input <- readFile fileName
   return $ snd <$> runParser parser (0, input)

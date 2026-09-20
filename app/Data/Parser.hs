@@ -2,6 +2,7 @@ module Data.Parser where
 
 import Control.Applicative
 import Data.Char (isSpace)
+import Data.Either.Extra
 import Data.List (uncons)
 
 type Loc = Int
@@ -12,7 +13,7 @@ type Input = (Loc, String)
 
 -- runParser acts as an unwrapper, shortens some expressions that would otherwise require patternmatching (Parser p) or return (rs, x) 
 newtype Parser a = Parser
-  { runParser :: Input -> Maybe (Input, a)
+  { runParser :: Input -> Either Desc (Input, a)
   }
 
 instance Functor Parser where
@@ -23,7 +24,7 @@ instance Functor Parser where
 
 -- More compact (horizontally) but harder to read and store values
 instance Applicative Parser where
-  pure x = Parser $ \s -> Just (s, x)
+  pure x = Parser $ \s -> pure (s, x)
   Parser pf <*> ps =
     Parser $ \s -> do
       (s', f) <- pf s
@@ -37,26 +38,36 @@ instance Monad Parser where
       runParser (f x) s'
 
 instance Alternative Parser where
-  empty = Parser . const $ Nothing
-  (Parser p1) <|> (Parser p2) = Parser $ \s -> p1 s <|> p2 s
+  empty = Parser . const . Left $ "Empty Parser"
+  (Parser p1) <|> (Parser p2) =
+    Parser $ \s ->
+      case (p1 s, p2 s) of
+        (Right x, _) -> Right x
+        (Left _, Right x) -> Right x
+        (Left x, _) -> Left x
 
 -- No proper error handling
 char :: Char -> Parser Char
-char c = charIf (== c)
+char c = charIf (== c) $ "char " ++ show c
 
-charIf :: (Char -> Bool) -> Parser Char
-charIf p =
+charIf :: (Char -> Bool) -> Desc -> Parser Char
+charIf p desc =
   Parser $ \(loc, s) -> do
-    (c, cs) <- uncons s
+    let desc' = "Expected " ++ desc ++ " at " ++ show loc
+    (c, cs) <- maybeToEither (desc' ++ ", reached end of input") (uncons s)
     if p c
       then return ((loc + 1, cs), c)
-      else Nothing
+      else Left $ desc' ++ ", got " ++ show c
 
 string :: String -> Parser String
-string = traverse char
+string s =
+  Parser $ \input ->
+    case runParser (traverse char s) input of
+      Left desc -> Left $ desc ++ " in string " ++ show s
+      Right x -> Right x
 
 ws :: Parser String
-ws = many $ charIf isSpace
+ws = many . charIf isSpace $ "whitespace"
 
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []

@@ -2,7 +2,6 @@ module Lambda where
 
 import Control.Applicative
 import Data.Char
-import Data.List
 import Data.Parser
 
 data Expression
@@ -26,16 +25,16 @@ notNull p =
   Parser $ \s -> do
     (s', xs) <- runParser p s
     if null xs
-      then Nothing
+      then Left "Empty list"
       else return (s', xs)
 
 forceWs :: Parser String
-forceWs = some $ charIf isSpace
+forceWs = some $ charIf isSpace "whitespace"
 
 identifier :: Parser Expression
 identifier = do
-  c <- charIf isAlpha
-  cs <- many $ charIf isAlphaNum
+  c <- charIf isAlpha "alphabetical"
+  cs <- many $ charIf isAlphaNum "alpnumeric"
   return $ Identifier (c : cs)
 
 grouping :: Parser Expression
@@ -44,15 +43,15 @@ grouping = char '(' *> expression <* char ')'
 application :: Parser Expression
 application = do
   e <- notApplication
-  forceWs
+  _ <- forceWs
   xs <- sepBy forceWs notApplication
   return $ foldl Application e xs
 
 lambda :: Parser Expression
 lambda = do
-  (char '\\' <|> char 'λ') >> ws
+  _ <- (char '\\' <|> char 'λ') >> ws
   is <- notNull $ sepBy forceWs identifier
-  ws >> (string "->" <|> pure <$> char '.') >> ws
+  _ <- ws >> (string "->" <|> pure <$> char '.') >> ws
   e <- expression
   return $ foldr Lambda (Lambda (last is) e) (init is)
 
@@ -77,18 +76,23 @@ reduce (Application (Lambda i e1) e2) = replaceIn i e2 (reduce e1)
 reduce (Application e1 e2) = Application (reduce e1) (reduce e2)
 reduce x = x
 
+apply :: Expression -> Expression -> Expression
 apply e1 e2 = reduce (Application e1 e2)
 
 applyIds :: Expression -> [String] -> Expression
 applyIds e = foldl apply e . map Identifier
 
+idiot :: Expression
 idiot = Lambda (Identifier "x") (Identifier "x")
 
+kestral :: Expression
 kestral = Lambda (Identifier "x") (Lambda (Identifier "y") (Identifier "x"))
 
+mockingbird :: Expression
 mockingbird =
   Lambda (Identifier "x") (Application (Identifier "x") (Identifier "x"))
 
+bluebird :: Expression
 bluebird =
   Lambda
     (Identifier "f")
@@ -100,6 +104,7 @@ bluebird =
              (Identifier "f")
              (Application (Identifier "g") (Identifier "x")))))
 
+starling :: Expression
 starling =
   Lambda
     (Identifier "x")
@@ -113,6 +118,7 @@ starling =
                 (Identifier "z")
                 (Application (Identifier "y") (Identifier "z"))))))
 
+yCombinator :: Expression
 yCombinator =
   Lambda
     (Identifier "f")

@@ -44,6 +44,7 @@ instance Alternative Parser where
         (Left _, Right x) -> Right x
         (Left x, _) -> Left x
 
+-- Shoddy Bifunctor
 mapLeft :: (Desc -> Desc) -> Parser a -> Parser a
 mapLeft f p =
   Parser $ \s ->
@@ -51,7 +52,6 @@ mapLeft f p =
       Left x -> Left $ f x
       Right x -> Right x
 
--- No proper error handling
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c
 

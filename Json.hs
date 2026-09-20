@@ -102,7 +102,7 @@ parseJson =
 parseFile :: FilePath -> Parser a -> IO (Maybe a)
 parseFile fileName parser = do
   input <- readFile fileName
-  return $ snd <$> runParser parser input
+  return $ snd <$> runParser parser (0, input)
 
 getValue :: JsonValue -> [String] -> Maybe JsonValue
 getValue (JsonObject []) _ = Nothing

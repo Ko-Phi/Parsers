@@ -4,8 +4,11 @@ import Control.Applicative
 import Data.Char (isSpace)
 import Data.List (uncons)
 
+type Input = (Int, String)
+
+-- runParser acts as an unwrapper, shortens some expressions that would otherwise require patternmatching (Parser p) or return (rs, x) 
 newtype Parser a = Parser
-  { runParser :: String -> Maybe (String, a)
+  { runParser :: Input -> Maybe (Input, a)
   }
 
 instance Functor Parser where
@@ -34,17 +37,15 @@ instance Alternative Parser where
   (Parser p1) <|> (Parser p2) = Parser $ \s -> p1 s <|> p2 s
 
 -- No proper error handling
--- runParser acts as an unwrapper, shortens some expressions that would otherwise require patternmatching (Parser p) or return (rs, x) 
---
 char :: Char -> Parser Char
 char c = charIf (== c)
 
 charIf :: (Char -> Bool) -> Parser Char
 charIf p =
-  Parser $ \s -> do
+  Parser $ \(loc, s) -> do
     (c, cs) <- uncons s
     if p c
-      then return (cs, c)
+      then return ((loc + 1, cs), c)
       else Nothing
 
 string :: String -> Parser String

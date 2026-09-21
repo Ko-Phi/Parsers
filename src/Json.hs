@@ -102,19 +102,19 @@ parseJson =
     <|> parseArray
     <|> parseObject
 
-parseFile :: FilePath -> Parser a -> IO (Either String a)
+parseFile :: FilePath -> Parser a -> IO (Either Error a)
 parseFile fileName parser = do
   input <- readFile fileName
   pure $ snd <$> runParser parser (0, input)
 
-getValue :: JsonValue -> [String] -> Maybe JsonValue
-getValue x [] = Just x
+getValue :: JsonValue -> [String] -> Either Error JsonValue
+getValue x [] = pure x
 getValue (JsonObject ps) (k:ks)
-  | Map.null ps = Nothing
+  | Map.null ps = Left "Empty Object"
   | otherwise = do
-    val <- Map.lookup k ps
+    val <- maybe (Left "Key not found") Right (Map.lookup k ps)
     getValue val ks
-getValue _ _ = Nothing
+getValue _ _ = Left "Non-Object"
 
 main :: IO ()
 main = undefined

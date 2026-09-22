@@ -44,13 +44,13 @@ application :: Parser Expression
 application = do
   e <- notApplication
   _ <- forceWs
-  xs <- sepBy forceWs notApplication
+  xs <- sepMany forceWs notApplication
   pure $ foldl Application e xs
 
 lambda :: Parser Expression
 lambda = do
   _ <- (char '\\' <|> char 'λ') >> ws
-  is <- notNull $ sepBy forceWs identifier
+  is <- notNull $ sepMany forceWs identifier
   _ <- ws >> (string "->" <|> pure <$> char '.') >> ws
   e <- expression
   pure $ foldr Lambda (Lambda (last is) e) (init is)

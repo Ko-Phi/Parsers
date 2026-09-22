@@ -78,12 +78,12 @@ parseString = JsonString <$> stringLiteral
 parseArray :: Parser JsonValue
 parseArray = JsonArray <$> (char '[' *> ws *> parseElements <* ws <* char ']')
   where
-    parseElements = sepBy (ws *> char ',' <* ws) parseJson
+    parseElements = sepMany (ws *> char ',' <* ws) parseJson
 
 parseObject :: Parser JsonValue
 parseObject = do
   _ <- char '{' *> ws
-  dict <- sepBy (ws *> char ',' <* ws) parsePair
+  dict <- sepMany (ws *> char ',' <* ws) parsePair
   _ <- ws <* char '}'
   mapErr (++ "i") . pure . JsonObject . Map.fromList $ dict
   where

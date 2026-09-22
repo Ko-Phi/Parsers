@@ -65,8 +65,8 @@ string s = mapErr (++ " in string " ++ show s) (traverse char s)
 ws :: Parser String
 ws = many . charIf isSpace $ "whitespace"
 
-sepBy :: Parser a -> Parser b -> Parser [b]
-sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
+sepMany :: Parser a -> Parser b -> Parser [b]
+sepMany sep element = sepSome sep element <|> pure []
 
-sepBy1 :: Parser a -> Parser b -> Parser [b]
-sepBy1 sep element = (:) <$> element <*> many (sep *> element)
+sepSome :: Parser a -> Parser b -> Parser [b]
+sepSome sep element = (:) <$> element <*> many (sep *> element)

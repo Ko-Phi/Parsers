@@ -16,7 +16,7 @@ newtype Parser a = Parser
   }
 
 instance Functor Parser where
-  fmap f p = Parser $ \s -> second (second f) $ runParser p s
+  fmap f p = Parser (second (second f) . runParser p)
 
 -- More compact (horizontally) but harder to read and store values
 instance Applicative Parser where
@@ -44,7 +44,7 @@ instance Alternative Parser where
 
 -- Shoddier Bifunctor implentation
 mapErr :: (String -> String) -> Parser a -> Parser a
-mapErr f p = Parser $ \s -> first (second f) (runParser p s)
+mapErr f p = Parser $ first (second f) . runParser p
 
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c

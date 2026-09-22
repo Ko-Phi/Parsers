@@ -85,7 +85,7 @@ parseObject = do
   _ <- char '{' *> ws
   dict <- sepBy (ws *> char ',' <* ws) parsePair
   _ <- ws <* char '}'
-  pure . JsonObject . Map.fromList $ dict
+  mapErr (++ "i") . pure . JsonObject . Map.fromList $ dict
   where
     parsePair = do
       key <- stringLiteral
@@ -95,19 +95,20 @@ parseObject = do
 
 parseJson :: Parser JsonValue
 parseJson =
-  parseNull
-    <|> parseBool
-    <|> parseString
-    <|> parseNumber
-    <|> parseArray
-    <|> parseObject
+  mapErr (const "Expected Json")
+    $ parseNull
+        <|> parseBool
+        <|> parseString
+        <|> parseNumber
+        <|> parseArray
+        <|> parseObject
 
 parseFile :: FilePath -> Parser a -> IO (Either Error a)
 parseFile fileName parser = do
   input <- readFile fileName
   pure $ snd <$> runParser parser (0, input)
 
-getValue :: JsonValue -> [String] -> Either Error JsonValue
+getValue :: JsonValue -> [String] -> Either String JsonValue
 getValue x [] = pure x
 getValue (JsonObject ps) (k:ks)
   | Map.null ps = Left "Empty Object"

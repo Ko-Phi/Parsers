@@ -7,7 +7,7 @@ import Data.List (uncons)
 
 type Loc = Int
 
-type Error = String
+type Error = (Loc, String)
 
 type Input = (Loc, String)
 
@@ -34,7 +34,7 @@ instance Monad Parser where
       runParser (f x) s'
 
 instance Alternative Parser where
-  empty = Parser . const . Left $ "Empty Parser"
+  empty = Parser . const . Left $ (0, "Empty Parser")
   (Parser p1) <|> (Parser p2) =
     Parser $ \s ->
       case (p1 s, p2 s) of
@@ -42,9 +42,9 @@ instance Alternative Parser where
         (Left _, Right x) -> Right x
         (Left x, _) -> Left x
 
--- Shoddy Bifunctor implentation
-mapErr :: (Error -> Error) -> Parser a -> Parser a
-mapErr f p = Parser $ \s -> first f (runParser p s)
+-- Shoddier Bifunctor implentation
+mapErr :: (String -> String) -> Parser a -> Parser a
+mapErr f p = Parser $ \s -> first (second f) (runParser p s)
 
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c
@@ -52,11 +52,12 @@ char c = charIf (== c) $ "char " ++ show c
 charIf :: (Char -> Bool) -> String -> Parser Char
 charIf p pattern =
   Parser $ \(loc, s) -> do
-    let err = "Expected " ++ pattern ++ " at " ++ show loc
-    (c, s') <- maybe (Left $ err ++ ", reached end of input") Right (uncons s)
+    let err = "Expected " ++ pattern
+    (c, s') <-
+      maybe (Left (loc, err ++ ", reached end of input")) Right (uncons s)
     if p c
       then pure ((loc + 1, s'), c)
-      else Left $ err ++ ", got " ++ show c
+      else Left (loc, err ++ ", got " ++ show c)
 
 string :: String -> Parser String
 string s = mapErr (++ " in string " ++ show s) (traverse char s)
@@ -66,3 +67,6 @@ ws = many . charIf isSpace $ "whitespace"
 
 sepBy :: Parser a -> Parser b -> Parser [b]
 sepBy sep element = (:) <$> element <*> many (sep *> element) <|> pure []
+
+sepBy1 :: Parser a -> Parser b -> Parser [b]
+sepBy1 sep element = (:) <$> element <*> many (sep *> element)

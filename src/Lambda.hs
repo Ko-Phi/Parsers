@@ -23,10 +23,10 @@ instance Show Expression where
 notNull :: Parser [a] -> Parser [a]
 notNull p =
   Parser $ \s -> do
-    (s', xs) <- runParser p s
+    ((loc, s'), xs) <- runParser p s
     if null xs
-      then Left "Empty list"
-      else pure (s', xs)
+      then Left (loc, "Empty list")
+      else pure ((loc, s'), xs)
 
 forceWs :: Parser String
 forceWs = some $ charIf isSpace "whitespace"

@@ -82,10 +82,8 @@ parseArray =
     c <- charIf (const True) "']'"
     case c of
       ']' -> pure elements
-      ',' -> Parser $ \(loc, _) -> Left (loc, "Trailing comma")
-      _ ->
-        Parser $ \(loc, _) ->
-          Left (loc, "Unexpected character " ++ show c ++ " at end of array")
+      ',' -> throwP "Trailing comma"
+      _ -> throwP ("Unexpected character " ++ show c ++ " at end of array")
   where
     parseElements = sepMany (ws *> char ',' <* ws) parseJson
 

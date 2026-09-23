@@ -46,6 +46,15 @@ instance Alternative Parser where
 mapErr :: (String -> String) -> Parser a -> Parser a
 mapErr f p = Parser $ first (second f) . runParser p
 
+throwP :: String -> Parser a
+throwP s = Parser $ \(loc, _) -> Left (loc, s)
+
+get :: Parser Input
+get = Parser $ \s -> Right (s, s)
+
+put :: Input -> Parser ()
+put s = Parser $ \_ -> Right (s, ())
+
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c
 

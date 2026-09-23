@@ -5,7 +5,7 @@ import Data.Bifunctor
 import Data.Char (isSpace)
 import Data.List (uncons)
 
-type Loc = Int
+type Loc = (Int, Int)
 
 type Error = (Loc, String)
 
@@ -34,7 +34,7 @@ instance Monad Parser where
       runParser (f x) s'
 
 instance Alternative Parser where
-  empty = Parser . const . Left $ (0, "Empty Parser")
+  empty = Parser . const . Left $ ((0, 0), "Empty Parser")
   (Parser p1) <|> (Parser p2) =
     Parser $ \s ->
       case (p1 s, p2 s) of
@@ -51,12 +51,16 @@ char c = charIf (== c) $ "char " ++ show c
 
 charIf :: (Char -> Bool) -> String -> Parser Char
 charIf p pattern =
-  Parser $ \(loc, s) -> do
+  Parser $ \(loc@(row, col), s) -> do
     let err = "Expected " ++ pattern
     (c, s') <-
       maybe (Left (loc, err ++ ", reached end of input")) Right (uncons s)
+    let next =
+          if c == '\n'
+            then (row + 1, 0)
+            else (row, col + 1)
     if p c
-      then pure ((loc + 1, s'), c)
+      then pure ((next, s'), c)
       else Left (loc, err ++ ", got " ++ show c)
 
 string :: String -> Parser String

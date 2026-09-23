@@ -106,7 +106,7 @@ parseJson =
 parseFile :: FilePath -> Parser a -> IO (Either Error a)
 parseFile fileName parser = do
   input <- readFile fileName
-  pure $ snd <$> runParser parser (0, input)
+  pure $ snd <$> runParser parser ((0, 0), input)
 
 getValue :: JsonValue -> [String] -> Either String JsonValue
 getValue x [] = pure x

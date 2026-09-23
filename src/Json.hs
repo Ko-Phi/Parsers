@@ -76,7 +76,16 @@ parseString :: Parser JsonValue
 parseString = JsonString <$> stringLiteral
 
 parseArray :: Parser JsonValue
-parseArray = JsonArray <$> (char '[' *> ws *> parseElements <* ws <* char ']')
+parseArray =
+  JsonArray <$> do
+    elements <- char '[' *> ws *> parseElements <* ws
+    c <- charIf (const True) "']'"
+    case c of
+      ']' -> pure elements
+      ',' -> Parser $ \(loc, _) -> Left (loc, "Trailing comma")
+      _ ->
+        Parser $ \(loc, _) ->
+          Left (loc, "Unexpected character " ++ show c ++ " at end of array")
   where
     parseElements = sepMany (ws *> char ',' <* ws) parseJson
 
@@ -95,13 +104,12 @@ parseObject = do
 
 parseJson :: Parser JsonValue
 parseJson =
-  mapErr (const "Expected Json")
-    $ parseNull
-        <|> parseBool
-        <|> parseString
-        <|> parseNumber
-        <|> parseArray
-        <|> parseObject
+  parseNull
+    <|> parseBool
+    <|> parseString
+    <|> parseNumber
+    <|> parseArray
+    <|> parseObject
 
 parseFile :: FilePath -> Parser a -> IO (Either Error a)
 parseFile fileName parser = do

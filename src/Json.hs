@@ -88,20 +88,25 @@ parseArray =
     parseElements = sepMany (ws *> char ',' <* ws) parseJson
 
 parseObject :: Parser JsonValue
-parseObject = do
-  _ <- char '{' *> ws
-  dict <- sepSome (ws *> char ',' <* ws) parsePair <* ws
-  s <- get
-  case runParser (char '}' <* ws) s of
-    Right (s', _) -> put s' (JsonObject . Map.fromList $ dict)
-    Left (_, _) -> do
-      s' <- get
-      case runParser (char ',') s' of
-        Left _ -> throwP "Expected '}' or ','"
-        Right (s'', _) ->
-          case runParser parsePair s'' of
-            Left (_, err) -> throwP err
-            Right _ -> undefined
+parseObject =
+  (do
+     _ <- char '{' *> ws
+     dict <- sepSome (ws *> char ',' <* ws) parsePair <* ws
+     s <- get
+     case runParser (char '}' <* ws) s of
+       Right (s', _) -> put s' (JsonObject . Map.fromList $ dict)
+       Left (_, _) -> do
+         s' <- get
+         case runParser (char ',') s' of
+           Left _ -> throwP "Expected '}' or ','"
+           Right (s'', _) ->
+             case runParser parsePair s'' of
+               Left (_, err) -> throwP err
+               Right _ -> undefined)
+    <|> (do
+           _ <- char '{' *> ws
+           _ <- char '}'
+           (pure . JsonObject) Map.empty)
   where
     parsePair = do
       s <- get

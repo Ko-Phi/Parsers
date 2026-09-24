@@ -15,7 +15,7 @@ data JsonValue
   | JsonString String
   | JsonNumber Double
   | JsonArray [JsonValue]
-  | JsonObject (Map.Map String JsonValue) -- Less efficient than Data.Map
+  | JsonObject (Map.Map String JsonValue)
   deriving (Eq)
 
 instance Show JsonValue where
@@ -94,15 +94,16 @@ parseObject = do
   dict <- sepSome (ws *> char ',' <* ws) parsePair <* ws
   s <- get
   case runParser (char '}' <* ws) s of
-    Right _ -> do
+    Right (s', _) -> do
+      put s'
       pure . JsonObject . Map.fromList $ dict
     Left _ -> do
       _ <- char ',' *> parsePair
-      undefined -- Impossible
+      empty -- Impossible
   <|> (char '{' *> ws *> char '}') $> JsonObject Map.empty
   where
     parsePair = do
-      key <- mapErr (const "Invalid key") (ws *> stringLiteral)
+      key <- mapErr ("Invalid key: " ++) (ws *> stringLiteral)
       _ <- ws *> char ':' <* ws
       value <- mapErr (const "Invalid value") parseJson
       pure (key, value)
@@ -116,10 +117,10 @@ parseJson =
     <|> parseArray
     <|> parseObject
 
-parseFile :: FilePath -> Parser a -> IO (Either Error a)
+parseFile :: FilePath -> Parser a -> IO (Either Error (Input, a))
 parseFile fileName parser = do
   input <- readFile fileName
-  pure $ snd <$> runParser parser ((0, 0), input)
+  pure $ runParser parser ((0, 0), input)
 
 getValue :: JsonValue -> [String] -> Either String JsonValue
 getValue x [] = pure x

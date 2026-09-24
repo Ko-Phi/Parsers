@@ -52,8 +52,8 @@ throwP s = Parser $ \(loc, _) -> Left (loc, s)
 get :: Parser Input
 get = Parser $ \s -> Right (s, s)
 
-put :: Input -> Parser ()
-put s = Parser $ \_ -> Right (s, ())
+put :: Input -> a -> Parser a
+put s x = Parser $ \_ -> Right (s, x)
 
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c

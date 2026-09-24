@@ -90,15 +90,30 @@ parseArray =
 parseObject :: Parser JsonValue
 parseObject = do
   _ <- char '{' *> ws
-  dict <- sepMany (ws *> char ',' <* ws) parsePair
-  _ <- ws <* char '}'
-  mapErr (++ "i") . pure . JsonObject . Map.fromList $ dict
+  dict <- sepSome (ws *> char ',' <* ws) parsePair <* ws
+  s <- get
+  case runParser (char '}' <* ws) s of
+    Right (s', _) -> put s' (JsonObject . Map.fromList $ dict)
+    Left (_, _) -> do
+      s' <- get
+      case runParser (char ',') s' of
+        Left _ -> throwP "Expected '}' or ','"
+        Right (s'', _) ->
+          case runParser parsePair s'' of
+            Left (_, err) -> throwP err
+            Right _ -> undefined
   where
     parsePair = do
-      key <- stringLiteral
-      _ <- ws *> char ':' <* ws
-      value <- parseJson
-      pure (key, value)
+      s <- get
+      case runParser (ws *> stringLiteral) s of
+        Left _ -> throwP "Invalid key"
+        Right (s', key) ->
+          case runParser (ws *> char ':' <* ws) s' of
+            Left _ -> throwP "Expected ':'"
+            Right (s'', _) ->
+              case runParser parseJson s'' of
+                Left _ -> throwP "Invalid value"
+                Right (s''', value) -> put s''' (key, value)
 
 parseJson :: Parser JsonValue
 parseJson =

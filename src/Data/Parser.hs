@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module Data.Parser where
 
 import Control.Applicative
@@ -7,7 +9,11 @@ import Data.List (uncons)
 
 type Loc = (Int, Int)
 
-type Error = (Loc, String)
+data Error = Error
+  { loc :: Loc
+  , desc :: String
+  , imp :: Int
+  }
 
 type Input = (Loc, String)
 
@@ -34,20 +40,23 @@ instance Monad Parser where
       runParser (f x) s'
 
 instance Alternative Parser where
-  empty = Parser . const . Left $ ((0, 0), "Empty Parser")
+  empty = Parser . const . Left $ Error (0, 0) "Empty Parser" 0
   (Parser p1) <|> (Parser p2) =
-    Parser $ \s ->
-      case (p1 s, p2 s) of
-        (Right x, _) -> Right x
-        (Left _, Right x) -> Right x
-        (Left x, _) -> Left x
+    let choose (Right x) _ = Right x
+        choose (Left _) (Right x) = Right x
+        choose (Left x) (Left y)
+          | imp x >= imp y = Left x
+          | otherwise = Left y
+     in Parser $ \s -> choose (p1 s) (p2 s)
 
 -- Shoddier Bifunctor implentation
-mapErr :: (String -> String) -> Parser a -> Parser a
-mapErr f p = Parser $ first (second f) . runParser p
+mapErr :: (String -> String) -> Parser a -> Int -> Parser a
+mapErr f p imp = Parser $ first (mapDesc f) . runParser p
+  where
+    mapDesc f (Error loc desc _) = Error loc (f desc) imp
 
-throwP :: String -> Parser a
-throwP s = Parser $ \(loc, _) -> Left (loc, s)
+throwP :: String -> Int -> Parser a
+throwP s imp = Parser $ \(loc, _) -> Left $ Error loc s imp
 
 get :: Parser Input
 get = Parser $ \s -> Right (s, s)
@@ -63,17 +72,20 @@ charIf p pattern =
   Parser $ \(loc@(row, col), s) -> do
     let err = "Expected " ++ pattern
     (c, s') <-
-      maybe (Left (loc, err ++ ", reached end of input")) Right (uncons s)
+      maybe
+        (Left $ Error loc (err ++ ", reached end of input") 1)
+        Right
+        (uncons s)
     let next =
           if c == '\n'
             then (row + 1, 0)
             else (row, col + 1)
     if p c
       then pure ((next, s'), c)
-      else Left (loc, err ++ ", got " ++ show c)
+      else Left $ Error loc (err ++ ", got " ++ show c) 1
 
 string :: String -> Parser String
-string s = mapErr (++ " in string " ++ show s) (traverse char s)
+string s = mapErr (++ " in string " ++ show s) (traverse char s) 1
 
 ws :: Parser String
 ws = many . charIf isSpace $ "whitespace"

@@ -83,8 +83,8 @@ parseArray =
     c <- charIf (const True) "']'"
     case c of
       ']' -> pure elements
-      ',' -> throwP "Trailing comma"
-      _ -> throwP ("Unexpected character " ++ show c ++ " at end of array")
+      ',' -> throwP "Trailing comma" 3
+      _ -> throwP ("Unexpected character " ++ show c ++ " at end of array") 3
   where
     parseElements = sepMany (ws *> char ',' <* ws) parseJson
 
@@ -94,13 +94,13 @@ parseObject = do
   s <- get
   case runParser (char '}' <* ws) s of
     Right (s', _) -> put s' >> (pure . JsonObject . Map.fromList $ dict)
-    Left _ -> char ',' *> parsePair *> empty -- impossible
+    Left _ -> char ',' *> parsePair *> empty -- impossible to succeed
   <|> (char '{' *> ws *> char '}') $> JsonObject Map.empty
   where
     parsePair = do
-      key <- mapErr ("Invalid key: " ++) (ws *> stringLiteral)
+      key <- mapErr ("Invalid key: " ++) (ws *> stringLiteral) 2
       _ <- ws *> char ':' <* ws
-      value <- mapErr (const "Invalid value") parseJson
+      value <- mapErr (const "Invalid value") parseJson 2
       pure (key, value)
 
 parseJson :: Parser JsonValue
@@ -111,6 +111,7 @@ parseJson =
     <|> parseNumber
     <|> parseArray
     <|> parseObject
+    <|> throwP "Parse Error/Missing Value" 2
 
 parseFile :: FilePath -> Parser a -> IO (Either Error (Input, a))
 parseFile fileName parser = do

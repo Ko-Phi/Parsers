@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module Lambda where
 
 import Control.Applicative
@@ -25,7 +27,7 @@ notNull p =
   Parser $ \s -> do
     ((loc, s'), xs) <- runParser p s
     if null xs
-      then Left (loc, "Empty list")
+      then Left $ Error loc "Empty list" 1
       else pure ((loc, s'), xs)
 
 forceWs :: Parser String

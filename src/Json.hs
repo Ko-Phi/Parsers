@@ -39,12 +39,21 @@ parseDouble :: Parser Double
 parseDouble = do
   sign <- minus <|> pure 1
   nat <- read <$> digits
-  mantissa <- read . ('0' :) <$> liftA2 (:) (char '.') digits <|> pure 0
+  s1 <- get
+  mantissa <-
+    case runParser (char '.') s1 of
+      Right (s1', _) -> put s1' *> (read . ('0' :) <$> digits')
+      Left _ -> pure 0
+  s2 <- get
   expo <-
-    e *> liftA2 (*) (plus <|> minus <|> pure 1) (read <$> digits) <|> pure 0
+    case runParser e s2 of
+      Right (s2', _) ->
+        put s2' *> liftA2 (*) (plus <|> minus <|> pure 1) (read <$> digits')
+      Left _ -> pure 0
   pure $ sign * (nat + mantissa) * (10 ** expo)
   where
-    digits = some (charIf isDigit "Expected digit")
+    digits = some (charIf isDigit "digit")
+    digits' = mapErr id digits 2
     e = char 'e' <|> char 'E'
     plus = 1 <$ char '+'
     minus = -1 <$ char '-'

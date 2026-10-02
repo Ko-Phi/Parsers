@@ -13,7 +13,7 @@ data Error = Error
   { loc :: Loc
   , desc :: String
   , imp :: Int
-  }
+  } deriving (Show)
 
 type Input = (Loc, String)
 

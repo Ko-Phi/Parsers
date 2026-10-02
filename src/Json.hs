@@ -90,16 +90,11 @@ parseArray =
 
 parseObject :: Parser JsonValue
 parseObject = do
-  _ <- char '{' *> ws
-  dict <- sepSome (ws *> char ',' <* ws) parsePair <* ws
+  dict <- char '{' *> ws *> sepSome (ws *> char ',' <* ws) parsePair <* ws
   s <- get
   case runParser (char '}' <* ws) s of
-    Right (s', _) -> do
-      put s'
-      pure . JsonObject . Map.fromList $ dict
-    Left _ -> do
-      _ <- char ',' *> parsePair
-      empty -- Impossible
+    Right (s', _) -> put s' >> (pure . JsonObject . Map.fromList $ dict)
+    Left _ -> char ',' *> parsePair *> empty -- impossible
   <|> (char '{' *> ws *> char '}') $> JsonObject Map.empty
   where
     parsePair = do

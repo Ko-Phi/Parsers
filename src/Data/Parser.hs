@@ -13,7 +13,11 @@ data Error = Error
   { loc :: Loc
   , desc :: String
   , imp :: Int
-  } deriving (Show)
+  }
+
+instance Show Error where
+  show (Error (row, col) desc _) =
+    "(" ++ show row ++ ", " ++ show col ++ "): " ++ desc
 
 type Input = (Loc, String)
 

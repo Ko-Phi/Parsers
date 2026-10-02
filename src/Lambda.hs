@@ -69,8 +69,7 @@ replaceIn i e1 e2@(Identifier _) =
     then e1
     else e2
 -- May duplicate indentifiers
-replaceIn i e1 (Application e2 e3) =
-  Application (replaceIn i e1 e2) (replaceIn i e1 e3)
+replaceIn i e1 (Application e2 e3) = Application (replaceIn i e1 e2) (replaceIn i e1 e3)
 replaceIn i e1 (Lambda i1 e2) = Lambda i1 (replaceIn i e1 e2)
 
 reduce :: Expression -> Expression
@@ -91,8 +90,7 @@ kestral :: Expression
 kestral = Lambda (Identifier "x") (Lambda (Identifier "y") (Identifier "x"))
 
 mockingbird :: Expression
-mockingbird =
-  Lambda (Identifier "x") (Application (Identifier "x") (Identifier "x"))
+mockingbird = Lambda (Identifier "x") (Application (Identifier "x") (Identifier "x"))
 
 bluebird :: Expression
 bluebird =
@@ -102,9 +100,7 @@ bluebird =
        (Identifier "g")
        (Lambda
           (Identifier "x")
-          (Application
-             (Identifier "f")
-             (Application (Identifier "g") (Identifier "x")))))
+          (Application (Identifier "f") (Application (Identifier "g") (Identifier "x")))))
 
 starling :: Expression
 starling =
@@ -116,9 +112,7 @@ starling =
           (Identifier "z")
           (Application
              (Identifier "x")
-             (Application
-                (Identifier "z")
-                (Application (Identifier "y") (Identifier "z"))))))
+             (Application (Identifier "z") (Application (Identifier "y") (Identifier "z"))))))
 
 yCombinator :: Expression
 yCombinator =
@@ -127,11 +121,7 @@ yCombinator =
     (Application
        (Lambda
           (Identifier "x")
-          (Application
-             (Identifier "f")
-             (Application (Identifier "x") (Identifier "x"))))
+          (Application (Identifier "f") (Application (Identifier "x") (Identifier "x"))))
        (Lambda
           (Identifier "x")
-          (Application
-             (Identifier "f")
-             (Application (Identifier "x") (Identifier "x")))))
+          (Application (Identifier "f") (Application (Identifier "x") (Identifier "x")))))

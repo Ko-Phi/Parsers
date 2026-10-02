@@ -16,8 +16,7 @@ data Error = Error
   }
 
 instance Show Error where
-  show (Error (row, col) desc _) =
-    "(" ++ show row ++ ", " ++ show col ++ "): " ++ desc
+  show (Error (row, col) desc _) = "(" ++ show row ++ ", " ++ show col ++ "): " ++ desc
 
 type Input = (Loc, String)
 
@@ -55,9 +54,9 @@ instance Alternative Parser where
 
 -- Shoddier Bifunctor implentation
 mapErr :: (String -> String) -> Parser a -> Int -> Parser a
-mapErr f p imp = Parser $ first (mapDesc f) . runParser p
-  where
-    mapDesc f (Error loc desc _) = Error loc (f desc) imp
+mapErr f p imp =
+  let mapDesc f (Error loc desc _) = Error loc (f desc) imp
+   in Parser $ first (mapDesc f) . runParser p
 
 throwP :: String -> Int -> Parser a
 throwP s imp = Parser $ \(loc, _) -> Left $ Error loc s imp
@@ -75,11 +74,7 @@ charIf :: (Char -> Bool) -> String -> Parser Char
 charIf p pattern =
   Parser $ \(loc@(row, col), s) -> do
     let err = "Expected " ++ pattern
-    (c, s') <-
-      maybe
-        (Left $ Error loc (err ++ ", reached end of input") 1)
-        Right
-        (uncons s)
+    (c, s') <- maybe (Left $ Error loc (err ++ ", reached end of input") 1) Right (uncons s)
     let next =
           if c == '\n'
             then (row + 1, 0)

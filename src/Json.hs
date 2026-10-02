@@ -42,7 +42,7 @@ parseDouble = do
   s1 <- get
   mantissa <-
     case runParser (char '.') s1 of
-      Right (s1', _) -> put s1' *> (read . ('0' :) <$> digits')
+      Right (s', _) -> put s' *> (read . ("0." ++) <$> digits')
       Left _ -> pure 0
   s2 <- get
   expo <-

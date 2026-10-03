@@ -25,7 +25,9 @@ instance Show JsonValue where
   show (JsonNumber n) = show n
   show (JsonArray xs) = "[" ++ intercalate ", " (map show xs) ++ "]"
   show (JsonObject ps) =
-    "{" ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) (Map.toList ps)) ++ "}"
+    "{"
+      ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) (Map.toList ps))
+      ++ "}"
 
 parseNull :: Parser JsonValue
 parseNull = JsonNull <$ string "null"
@@ -45,7 +47,8 @@ parseDouble = do
   s2 <- get
   expo <-
     case runParser e s2 of
-      Right (s2', _) -> put s2' *> liftA2 (*) (plus <|> minus <|> pure 1) (read <$> digits')
+      Right (s2', _) ->
+        put s2' *> liftA2 (*) (plus <|> minus <|> pure 1) (read <$> digits')
       Left _ -> pure 0
   pure $ sign * (nat + mantissa) * (10 ** expo)
   where
@@ -70,13 +73,14 @@ escapeChar =
     <|> ('\t' <$ string "\\t")
     <|> (string "\\u" *> escapeUnicode)
   where
-    escapeUnicode = chr . fst . head . readHex <$> replicateM 4 (charIf isHexDigit "hexcode")
+    escapeUnicode =
+      chr . fst . head . readHex <$> replicateM 4 (charIf isHexDigit "hexcode")
 
 normalChar :: Parser Char
 normalChar = charIf (liftA2 (&&) (/= '"') (/= '\\')) "non-quotation / escape"
 
 stringLiteral :: Parser String
-stringLiteral = char '"' *> many (normalChar <|> escapeChar) <* char '"'
+stringLiteral = char '"' *> mapErr id (many (normalChar <|> escapeChar)) 2 <* char '"'
 
 parseString :: Parser JsonValue
 parseString = JsonString <$> stringLiteral

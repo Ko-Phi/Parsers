@@ -25,7 +25,7 @@ newtype Parser a = Parser
   }
 
 instance Functor Parser where
-  fmap f p = Parser (second (second f) . runParser p)
+  fmap f p = Parser (fmap (fmap f) . runParser p)
 
 -- More compact (horizontally) but harder to read and store values
 instance Applicative Parser where
@@ -52,7 +52,7 @@ instance Alternative Parser where
           | otherwise = Left y
      in Parser $ \s -> choose (p1 s) (p2 s)
 
--- Shoddier Bifunctor implentation
+-- Shoddiest Bifunctor implentation
 mapErr :: (String -> String) -> Parser a -> Int -> Parser a
 mapErr f p imp =
   let mapDesc f (Error loc desc _) = Error loc (f desc) imp
@@ -74,7 +74,8 @@ charIf :: (Char -> Bool) -> String -> Parser Char
 charIf p pattern =
   Parser $ \(loc@(row, col), s) -> do
     let err = "Expected " ++ pattern
-    (c, s') <- maybe (Left $ Error loc (err ++ ", reached end of input") 1) Right (uncons s)
+    (c, s') <-
+      maybe (Left $ Error loc (err ++ ", reached end of input") 1) Right (uncons s)
     let next =
           if c == '\n'
             then (row + 1, 0)

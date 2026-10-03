@@ -112,7 +112,9 @@ starling =
           (Identifier "z")
           (Application
              (Identifier "x")
-             (Application (Identifier "z") (Application (Identifier "y") (Identifier "z"))))))
+             (Application
+                (Identifier "z")
+                (Application (Identifier "y") (Identifier "z"))))))
 
 yCombinator :: Expression
 yCombinator =

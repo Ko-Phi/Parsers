@@ -58,6 +58,9 @@ mapErr f p imp =
   let mapDesc f (Error loc desc _) = Error loc (f desc) imp
    in Parser $ first (mapDesc f) . runParser p
 
+(<#>) :: (String -> String) -> Parser a -> Int -> Parser a
+(<#>) = mapErr
+
 throwP :: String -> Int -> Parser a
 throwP s imp = Parser $ \(loc, _) -> Left $ Error loc s imp
 
@@ -85,7 +88,7 @@ charIf p pattern =
       else Left $ Error loc (err ++ ", got " ++ show c) 1
 
 string :: String -> Parser String
-string s = mapErr (++ " in string " ++ show s) (traverse char s) 1
+string s = (++ " in string " ++ show s) <#> traverse char s $ 1
 
 ws :: Parser String
 ws = many . charIf isSpace $ "whitespace"

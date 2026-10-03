@@ -53,7 +53,7 @@ parseDouble = do
   pure $ sign * (nat + mantissa) * (10 ** expo)
   where
     digits = some (charIf isDigit "digit")
-    digits' = mapErr id digits 2
+    digits' = id <#> digits $ 2
     e = char 'e' <|> char 'E'
     plus = 1 <$ char '+'
     minus = -1 <$ char '-'
@@ -80,7 +80,7 @@ normalChar :: Parser Char
 normalChar = charIf (liftA2 (&&) (/= '"') (/= '\\')) "non-quotation / escape"
 
 stringLiteral :: Parser String
-stringLiteral = char '"' *> mapErr id (many (normalChar <|> escapeChar)) 2 <* char '"'
+stringLiteral = char '"' *> (id <#> many (normalChar <|> escapeChar) $ 2) <* char '"'
 
 parseString :: Parser JsonValue
 parseString = JsonString <$> stringLiteral
@@ -102,14 +102,14 @@ parseObject = do
   dict <- char '{' *> ws *> sepSome (ws *> char ',' <* ws) parsePair <* ws
   s <- get
   case runParser (char '}' <* ws) s of
-    Right (s', _) -> put s' >> (pure . JsonObject . Map.fromList $ dict)
+    Right (s', _) -> put s' $> JsonObject (Map.fromList dict)
     Left _ -> char ',' *> parsePair *> empty -- impossible to succeed
   <|> (char '{' *> ws *> char '}') $> JsonObject Map.empty
   where
     parsePair = do
-      key <- mapErr ("Invalid key: " ++) (ws *> stringLiteral) 2
-      _ <- ws *> char ':' <* ws
-      value <- mapErr (const "Invalid value") parseJson 2
+      key <- ("Invalid key: " ++) <#> (ws *> stringLiteral) $ 2
+      _ <- id <#> (ws *> char ':' <* ws) $ 2
+      value <- ("Invalid value in Object" ++) <#> parseJson $ 2
       pure (key, value)
 
 parseJson :: Parser JsonValue

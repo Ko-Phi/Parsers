@@ -25,15 +25,37 @@ instance Show JsonValue where
   show (JsonNumber n) = show n
   show (JsonArray xs) = "[" ++ intercalate ", " (map show xs) ++ "]"
   show (JsonObject ps) =
-    "{"
-      ++ intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) (Map.toList ps))
-      ++ "}"
+    '{' : intercalate ", " (map (\(k, v) -> k ++ ": " ++ show v) (Map.toList ps)) ++ "}"
 
 parseNull :: Parser JsonValue
 parseNull = JsonNull <$ string "null"
 
 parseBool :: Parser JsonValue
 parseBool = JsonBool <$> (True <$ string "true" <|> False <$ string "false")
+
+escapeChar :: Parser Char
+escapeChar =
+  ('"' <$ string "\\\"")
+    <|> ('\\' <$ string "\\\\")
+    <|> ('/' <$ string "\\/")
+    <|> ('\b' <$ string "\\b")
+    <|> ('\f' <$ string "\\f")
+    <|> ('\n' <$ string "\\n")
+    <|> ('\r' <$ string "\\r")
+    <|> ('\t' <$ string "\\t")
+    <|> (string "\\u" *> escapeUnicode)
+  where
+    escapeUnicode =
+      chr . fst . head . readHex <$> replicateM 4 (charIf isHexDigit "hexcode")
+
+normalChar :: Parser Char
+normalChar = charIf (liftA2 (&&) (/= '"') (/= '\\')) "non-quotation / escape"
+
+stringLiteral :: Parser String
+stringLiteral = char '"' *> (id <#> many (normalChar <|> escapeChar) $ 2) <* char '"'
+
+parseString :: Parser JsonValue
+parseString = JsonString <$> stringLiteral
 
 parseDouble :: Parser Double
 parseDouble = do
@@ -60,30 +82,6 @@ parseDouble = do
 
 parseNumber :: Parser JsonValue
 parseNumber = JsonNumber <$> parseDouble
-
-escapeChar :: Parser Char
-escapeChar =
-  ('"' <$ string "\\\"")
-    <|> ('\\' <$ string "\\\\")
-    <|> ('/' <$ string "\\/")
-    <|> ('\b' <$ string "\\b")
-    <|> ('\f' <$ string "\\f")
-    <|> ('\n' <$ string "\\n")
-    <|> ('\r' <$ string "\\r")
-    <|> ('\t' <$ string "\\t")
-    <|> (string "\\u" *> escapeUnicode)
-  where
-    escapeUnicode =
-      chr . fst . head . readHex <$> replicateM 4 (charIf isHexDigit "hexcode")
-
-normalChar :: Parser Char
-normalChar = charIf (liftA2 (&&) (/= '"') (/= '\\')) "non-quotation / escape"
-
-stringLiteral :: Parser String
-stringLiteral = char '"' *> (id <#> many (normalChar <|> escapeChar) $ 2) <* char '"'
-
-parseString :: Parser JsonValue
-parseString = JsonString <$> stringLiteral
 
 parseArray :: Parser JsonValue
 parseArray =

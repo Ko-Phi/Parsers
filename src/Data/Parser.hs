@@ -90,9 +90,6 @@ charIf p pattern =
 string :: String -> Parser String
 string s = (++ " in string " ++ show s) <#> traverse char s $ 1
 
-sm :: Applicative f => (a -> f b) -> [a] -> f [b]
-sm f s = sequenceA $ map f s
-
 ws :: Parser String
 ws = many . charIf isSpace $ "whitespace"
 

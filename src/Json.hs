@@ -101,7 +101,7 @@ parseObject = do
   s <- get
   case runParser (char '}' <* ws) s of
     Right (s', _) -> put s' $> JsonObject (Map.fromList dict)
-    Left _ -> char ',' *> parsePair *> empty -- impossible to succeed
+    Left _ -> char ',' *> parsePair *> error "Impossible" -- impossible to succeed parsePair
   <|> (char '{' *> ws *> char '}') $> JsonObject Map.empty
   where
     parsePair = do

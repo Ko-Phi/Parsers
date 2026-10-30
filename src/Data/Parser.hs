@@ -68,7 +68,7 @@ get :: Parser Input
 get = Parser $ \s -> Right (s, s)
 
 put :: Input -> Parser ()
-put s = Parser $ \_ -> Right (s, ())
+put s = Parser . const $ Right (s, ())
 
 char :: Char -> Parser Char
 char c = charIf (== c) $ "char " ++ show c
